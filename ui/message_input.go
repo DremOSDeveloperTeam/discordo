@@ -13,7 +13,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	lua "github.com/yuin/gopher-lua"
-	luar "layeh.com/gopher-luar"
 )
 
 type MessageInput struct {
@@ -40,44 +39,44 @@ func NewMessageInput(c *Core) *MessageInput {
 }
 
 func (mi *MessageInput) onInputCapture(e *tcell.EventKey) *tcell.EventKey {
-	keysTable, ok := mi.core.Config.State.GetGlobal("keys").(*lua.LTable)
-	if !ok {
-		return e
-	}
+	// keysTable, ok := mi.core.Config.State.GetGlobal("keys").(*lua.LTable)
+	// if !ok {
+	// 	return e
+	// }
 
-	messageInputTable, ok := keysTable.RawGetString("messageInput").(*lua.LTable)
-	if !ok {
-		return e
-	}
+	// messageInputTable, ok := keysTable.RawGetString("messageInput").(*lua.LTable)
+	// if !ok {
+	// 	return e
+	// }
 
-	var fn lua.LValue
-	messageInputTable.ForEach(func(k, v lua.LValue) {
-		keyTable := v.(*lua.LTable)
-		if e.Name() == lua.LVAsString(keyTable.RawGetString("name")) {
-			fn = keyTable.RawGetString("action")
-		}
-	})
+	// var fn lua.LValue
+	// messageInputTable.ForEach(func(k, v lua.LValue) {
+	// 	keyTable := v.(*lua.LTable)
+	// 	if e.Name() == lua.LVAsString(keyTable.RawGetString("name")) {
+	// 		fn = keyTable.RawGetString("action")
+	// 	}
+	// })
 
-	if fn != nil {
-		mi.core.Config.State.CallByParam(lua.P{
-			Fn:      fn,
-			NRet:    1,
-			Protect: true,
-		}, luar.New(mi.core.Config.State, mi.core), luar.New(mi.core.Config.State, e))
-		// Returned value
-		ret, ok := mi.core.Config.State.Get(-1).(*lua.LUserData)
-		if !ok {
-			return e
-		}
+	// if fn != nil {
+	// 	mi.core.Config.State.CallByParam(lua.P{
+	// 		Fn:      fn,
+	// 		NRet:    1,
+	// 		Protect: true,
+	// 	}, luar.New(mi.core.Config.State, mi.core), luar.New(mi.core.Config.State, e))
+	// 	// Returned value
+	// 	ret, ok := mi.core.Config.State.Get(-1).(*lua.LUserData)
+	// 	if !ok {
+	// 		return e
+	// 	}
 
-		// Remove returned value
-		mi.core.Config.State.Pop(1)
+	// 	// Remove returned value
+	// 	mi.core.Config.State.Pop(1)
 
-		ev, ok := ret.Value.(*tcell.EventKey)
-		if ok {
-			return ev
-		}
-	}
+	// 	ev, ok := ret.Value.(*tcell.EventKey)
+	// 	if ok {
+	// 		return ev
+	// 	}
+	// }
 
 	// Defaults
 	switch e.Name() {
@@ -107,8 +106,12 @@ func (mi *MessageInput) sendMessage() *tcell.EventKey {
 		return nil
 	}
 
-	messagesLimit := mi.core.Config.State.GetGlobal("messagesLimit")
-	ms, err := mi.core.State.Messages(mi.core.ChannelsTree.SelectedChannel.ID, uint(lua.LVAsNumber(messagesLimit)))
+	// messagesLimit := mi.core.Config.State.GetGlobal("messagesLimit")
+	// ms, err := mi.core.State.Messages(mi.core.ChannelsTree.SelectedChannel.ID, uint(lua.LVAsNumber(messagesLimit)))
+	// if err != nil {
+	// 	return nil
+	// }
+	ms, err := mi.core.State.Messages(mi.core.ChannelsTree.SelectedChannel.ID, 0)
 	if err != nil {
 		return nil
 	}

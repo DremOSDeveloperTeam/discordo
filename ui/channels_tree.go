@@ -5,7 +5,6 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/rivo/tview"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type ChannelsTree struct {
@@ -64,9 +63,13 @@ func (ct *ChannelsTree) onSelected(node *tview.TreeNode) {
 	ct.core.MessagesPanel.SetTitle(title)
 
 	go func() {
-		messagesLimit := ct.core.Config.State.GetGlobal("messagesLimit")
+		// messagesLimit := ct.core.Config.State.GetGlobal("messagesLimit")
 		// The returned slice will be sorted from latest to oldest.
-		ms, err := ct.core.State.Messages(c.ID, uint(lua.LVAsNumber(messagesLimit)))
+		// ms, err := ct.core.State.Messages(c.ID, uint(lua.LVAsNumber(messagesLimit)))
+		// if err != nil {
+		// 	return
+		// }
+		ms, err := ct.core.State.Messages(c.ID, 0)
 		if err != nil {
 			return
 		}

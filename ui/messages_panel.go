@@ -5,7 +5,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	lua "github.com/yuin/gopher-lua"
-	luar "layeh.com/gopher-luar"
 )
 
 type MessagesPanel struct {
@@ -51,44 +50,44 @@ func (mp *MessagesPanel) onInputCapture(e *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	keysTable, ok := mp.core.Config.State.GetGlobal("keys").(*lua.LTable)
-	if !ok {
-		return e
-	}
+	// keysTable, ok := mp.core.Config.State.GetGlobal("keys").(*lua.LTable)
+	// if !ok {
+	// 	return e
+	// }
 
-	messagesPanel, ok := keysTable.RawGetString("messagesPanel").(*lua.LTable)
-	if !ok {
-		return e
-	}
+	// messagesPanel, ok := keysTable.RawGetString("messagesPanel").(*lua.LTable)
+	// if !ok {
+	// 	return e
+	// }
 
-	var fn lua.LValue
-	messagesPanel.ForEach(func(k, v lua.LValue) {
-		keyTable := v.(*lua.LTable)
-		if e.Name() == lua.LVAsString(keyTable.RawGetString("name")) {
-			fn = keyTable.RawGetString("action")
-		}
-	})
+	// var fn lua.LValue
+	// messagesPanel.ForEach(func(k, v lua.LValue) {
+	// 	keyTable := v.(*lua.LTable)
+	// 	if e.Name() == lua.LVAsString(keyTable.RawGetString("name")) {
+	// 		fn = keyTable.RawGetString("action")
+	// 	}
+	// })
 
-	if fn != nil {
-		mp.core.Config.State.CallByParam(lua.P{
-			Fn:      fn,
-			NRet:    1,
-			Protect: true,
-		}, luar.New(mp.core.Config.State, mp.core), luar.New(mp.core.Config.State, e))
-		// Returned value
-		ret, ok := mp.core.Config.State.Get(-1).(*lua.LUserData)
-		if !ok {
-			return e
-		}
+	// if fn != nil {
+	// 	mp.core.Config.State.CallByParam(lua.P{
+	// 		Fn:      fn,
+	// 		NRet:    1,
+	// 		Protect: true,
+	// 	}, luar.New(mp.core.Config.State, mp.core), luar.New(mp.core.Config.State, e))
+	// 	// Returned value
+	// 	ret, ok := mp.core.Config.State.Get(-1).(*lua.LUserData)
+	// 	if !ok {
+	// 		return e
+	// 	}
 
-		// Remove returned value
-		mp.core.Config.State.Pop(1)
+	// 	// Remove returned value
+	// 	mp.core.Config.State.Pop(1)
 
-		ev, ok := ret.Value.(*tcell.EventKey)
-		if ok {
-			return ev
-		}
-	}
+	// 	ev, ok := ret.Value.(*tcell.EventKey)
+	// 	if ok {
+	// 		return ev
+	// 	}
+	// }
 
 	// Defaults
 	switch e.Name() {

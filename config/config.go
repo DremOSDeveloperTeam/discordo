@@ -2,49 +2,47 @@ package config
 
 import (
 	_ "embed"
-	"io"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
-
-	lua "github.com/yuin/gopher-lua"
+	"plugin"
 )
 
-//go:embed config.lua
-var LuaConfig []byte
+var Cfg []byte
 
 // Config initializes a new Lua state, loads a configuration file, and defines essential micellaneous fields.
 type Config struct {
-	// Path is the path of the configuration file. Its value is the configuration directory until Load() is called.
-	Path  string
-	State *lua.LState
+	// Path is the path of the configuration file. Its value is the path to the configuration directory until Load is called.
+	Path string
+	// Plugin is the Go plugin. Its value is nil until Load is called.
+	Plugin *plugin.Plugin
 }
 
 func NewConfig(path string) *Config {
 	return &Config{
-		Path:  path,
-		State: lua.NewState(),
+		Path: path,
 	}
 }
 
-func (c *Config) Load() error {
-	// Create directories that do not exist and are mentioned in the path recursively.
-	err := os.MkdirAll(c.Path, os.ModePerm)
+func (cfg *Config) Load() error {
+	// Create the configuration directory if it does not exist already, recursively.
+	err := os.MkdirAll(cfg.Path, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	c.Path = filepath.Join(c.Path, "config.lua")
-	// Open the existing configuration file with read-only flag.
-	f, err := os.Open(c.Path)
-	// If the configuration file does not exist, create a new configuration file with the read-write flag.
+	cfg.Path = filepath.Join(cfg.Path, "config.go")
+	_, err = os.Stat(cfg.Path)
+	// Create a new configuration file if it does not exist already with the read-write flag.
 	if os.IsNotExist(err) {
-		f, err = os.Create(c.Path)
+		f, err := os.Create(cfg.Path)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 
-		_, err = f.Write(LuaConfig)
+		_, err = f.Write(Cfg)
 		if err != nil {
 			return err
 		}
@@ -52,26 +50,51 @@ func (c *Config) Load() error {
 		return f.Sync()
 	}
 
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
+	outputPath := filepath.Join(filepath.Dir(cfg.Path), "config.so")
+	// Build the configuration plugin file using "go build" command.
+	err = cfg.Build(outputPath)
 	if err != nil {
 		return err
 	}
 
-	LuaConfig = b
+	// Open the configuration plugin file located in the configuration directory.
+	p, err := plugin.Open(outputPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cfg.Plugin = p
 	return nil
 }
 
-func (c *Config) KeyLua(s *lua.LState) int {
-	keyTable := s.NewTable()
-	keyTable.RawSetString("name", s.Get(1))
-	keyTable.RawSetString("description", s.Get(2))
-	keyTable.RawSetString("action", s.Get(3))
+func (cfg *Config) Build(outputPath string) error {
+	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", outputPath, cfg.Path)
+	return cmd.Run()
+}
 
-	s.Push(keyTable) // Push the result
-	return 1         // Number of results
+func (cfg *Config) String(name string) string {
+	sym, err := cfg.Plugin.Lookup(name)
+	if err != nil {
+		return ""
+	}
+
+	return *sym.(*string)
+}
+
+func (cfg *Config) Bool(name string) bool {
+	sym, err := cfg.Plugin.Lookup(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return *sym.(*bool)
+}
+
+func (cfg *Config) Int(name string) int {
+	sym, err := cfg.Plugin.Lookup(name)
+	if err != nil {
+		return 0
+	}
+
+	return *sym.(*int)
 }

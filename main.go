@@ -1,17 +1,20 @@
 package main
 
 import (
+	_ "embed"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/alecthomas/kong"
+	"github.com/ayntgl/discordo/config"
 	"github.com/ayntgl/discordo/ui"
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	lua "github.com/yuin/gopher-lua"
 	"github.com/zalando/go-keyring"
 )
+
+//go:embed default/config.go
+var cfg []byte
 
 const (
 	name  = "discordo"
@@ -24,6 +27,7 @@ var cli struct {
 }
 
 func main() {
+	config.Cfg = cfg
 	kong.Parse(&cli, kong.Name(name), kong.Description(usage), kong.UsageOnError())
 
 	// If the authentication token is provided via a flag, store it in the default keyring.
@@ -127,18 +131,18 @@ func main() {
 	tview.Borders.Horizontal = 0
 	tview.Borders.Vertical = 0
 
-	themeTable, ok := c.Config.State.GetGlobal("theme").(*lua.LTable)
-	if !ok {
-		return
-	}
+	// themeTable, ok := c.Config.State.GetGlobal("theme").(*lua.LTable)
+	// if !ok {
+	// 	return
+	// }
 
-	background := themeTable.RawGetString("background")
-	border := themeTable.RawGetString("border")
-	title := themeTable.RawGetString("title")
+	// background := themeTable.RawGetString("background")
+	// border := themeTable.RawGetString("border")
+	// title := themeTable.RawGetString("title")
 
-	tview.Styles.PrimitiveBackgroundColor = tcell.GetColor(lua.LVAsString(background))
-	tview.Styles.BorderColor = tcell.GetColor(lua.LVAsString(border))
-	tview.Styles.TitleColor = tcell.GetColor(lua.LVAsString(title))
+	// tview.Styles.PrimitiveBackgroundColor = tcell.GetColor(lua.LVAsString(background))
+	// tview.Styles.BorderColor = tcell.GetColor(lua.LVAsString(border))
+	// tview.Styles.TitleColor = tcell.GetColor(lua.LVAsString(title))
 
 	err := c.Application.Run()
 	if err != nil {
